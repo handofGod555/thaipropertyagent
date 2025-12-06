@@ -140,14 +140,17 @@ Set these in Convex Dashboard → Settings → Environment Variables:
 ### 5. Key Convex Functions
 
 **Actions** (can make HTTP calls):
+
 - `tts.generate` - Call ElevenLabs API, return audio URL
 - `chat.send` - Call Smithery API, return AI response
 
 **Mutations** (write to database):
+
 - `messages.save` - Save a message to conversation
 - `conversations.create` - Create new conversation
 
 **Queries** (read from database, real-time):
+
 - `properties.list` - Get all properties (with filters)
 - `messages.list` - Get messages for a conversation
 
@@ -173,5 +176,6 @@ Set these in Convex Dashboard → Settings → Environment Variables:
 ## Note on Express Backend
 
 The Express backend in `/backend` folder is no longer needed. You can:
+
 - Delete the `/backend` folder, OR
 - Keep it for future use if your friend wants to work on it later

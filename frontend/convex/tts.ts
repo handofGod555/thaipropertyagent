@@ -37,7 +37,7 @@ export const generate = action({
         },
         body: JSON.stringify({
           text: args.text,
-          model_id: args.modelId || "eleven_multilingual_v2", // Best for Thai
+          model_id: args.modelId || "eleven_v3", // Best for Thai
           voice_settings: {
             stability: 0.5,
             similarity_boost: 0.75,

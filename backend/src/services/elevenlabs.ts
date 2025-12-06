@@ -48,7 +48,7 @@ export class ElevenLabsService {
         url,
         {
           text,
-          model_id: modelId || 'eleven_multilingual_v2', // Best for Thai
+          model_id: modelId || 'eleven_v3', // Best for Thai
           voice_settings: {
             stability: 0.5,
             similarity_boost: 0.75,
