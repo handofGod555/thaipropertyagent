@@ -44,8 +44,8 @@ export const generate = action({
     const voiceId = args.voiceId || defaultVoiceId;
     const url = `${ELEVENLABS_API_URL}/text-to-speech/${voiceId}`;
     
-    // Use eleven_turbo_v2_5 which has excellent native Thai language support
-    const modelId = args.modelId || "eleven_turbo_v2_5";
+    // Use eleven_multilingual_v2 for best Thai language support
+    const modelId = args.modelId || "eleven_multilingual_v2";
 
     let lastError: Error | null = null;
 
@@ -62,6 +62,7 @@ export const generate = action({
           body: JSON.stringify({
             text,
             model_id: modelId,
+            language_code: "th", // Force Thai language pronunciation
             voice_settings: {
               stability: 0.5,
               similarity_boost: 0.75,

@@ -53,7 +53,8 @@ export class ElevenLabsService {
         url,
         {
           text,
-          model_id: modelId || 'eleven_turbo_v2_5', // Best for Thai with native support
+          model_id: modelId || 'eleven_multilingual_v2', // Best for Thai multilingual support
+          language_code: 'th', // Force Thai language pronunciation
           voice_settings: {
             stability: 0.5,
             similarity_boost: 0.75,
