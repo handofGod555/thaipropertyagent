@@ -62,7 +62,8 @@ export const generate = action({
           body: JSON.stringify({
             text,
             model_id: modelId,
-            language_code: "th", // Force Thai language pronunciation
+            // Note: eleven_multilingual_v2 auto-detects language from text
+            // Do NOT set language_code as it's not supported for Thai
             voice_settings: {
               stability: 0.5,
               similarity_boost: 0.75,
