@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Thai Property Agent - Cursor Hackathon Chiang Mai</title>
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --royal-blue: #1e3a5f;
+      --gold: #d4af37;
+      --gold-light: #e6c65f;
+      --cream: #f5f0e8;
+    }
+    
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: 'Space Grotesk', 'Sarabun', sans-serif;
+      background: linear-gradient(135deg, var(--royal-blue) 0%, #0d1f33 100%);
+      min-height: 100vh;
+      color: white;
+      overflow: hidden;
+    }
+    
+    .slide {
+      width: 100vw;
+      height: 100vh;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      padding: 40px 60px;
+      gap: 60px;
+      position: relative;
+    }
+    
+    /* Decorative Thai pattern */
+    .slide::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: 400px;
+      height: 400px;
+      background: radial-gradient(circle at top right, rgba(212, 175, 55, 0.15) 0%, transparent 60%);
+      pointer-events: none;
+    }
+    
+    .slide::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 300px;
+      height: 300px;
+      background: radial-gradient(circle at bottom left, rgba(212, 175, 55, 0.1) 0%, transparent 50%);
+      pointer-events: none;
+    }
+    
+    .left-panel {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      z-index: 1;
+    }
+    
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: linear-gradient(90deg, var(--gold), var(--gold-light));
+      color: var(--royal-blue);
+      padding: 8px 20px;
+      border-radius: 50px;
+      font-weight: 600;
+      font-size: 14px;
+      width: fit-content;
+      margin-bottom: 24px;
+      animation: slideIn 0.5s ease-out;
+    }
+    
+    .badge::before {
+      content: '🏆';
+    }
+    
+    .title {
+      font-size: 64px;
+      font-weight: 700;
+      line-height: 1.1;
+      margin-bottom: 16px;
+      animation: slideIn 0.5s ease-out 0.1s both;
+    }
+    
+    .title .thai {
+      font-family: 'Sarabun', sans-serif;
+      font-size: 32px;
+      color: var(--gold);
+      display: block;
+      margin-top: 8px;
+    }
+    
+    .subtitle {
+      font-size: 22px;
+      color: rgba(255, 255, 255, 0.7);
+      margin-bottom: 40px;
+      max-width: 500px;
+      line-height: 1.5;
+      animation: slideIn 0.5s ease-out 0.2s both;
+    }
+    
+    .features {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      animation: slideIn 0.5s ease-out 0.3s both;
+    }
+    
+    .feature {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      background: rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(10px);
+      padding: 16px 24px;
+      border-radius: 16px;
+      border: 1px solid rgba(212, 175, 55, 0.2);
+      transition: all 0.3s ease;
+    }
+    
+    .feature:hover {
+      background: rgba(255, 255, 255, 0.1);
+      border-color: var(--gold);
+      transform: translateX(10px);
+    }
+    
+    .feature-icon {
+      width: 48px;
+      height: 48px;
+      background: linear-gradient(135deg, var(--gold), var(--gold-light));
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      flex-shrink: 0;
+    }
+    
+    .feature-text h3 {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+    
+    .feature-text p {
+      font-size: 14px;
+      color: rgba(255, 255, 255, 0.6);
+    }
+    
+    .right-panel {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      z-index: 1;
+    }
+    
+    .mockup {
+      width: 340px;
+      background: white;
+      border-radius: 32px;
+      overflow: hidden;
+      box-shadow: 0 40px 80px rgba(0, 0, 0, 0.4);
+      animation: float 3s ease-in-out infinite, slideIn 0.5s ease-out 0.4s both;
+    }
+    
+    .mockup-header {
+      background: linear-gradient(90deg, var(--royal-blue), #2a4a6f);
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    
+    .mockup-logo {
+      width: 40px;
+      height: 40px;
+      background: linear-gradient(135deg, var(--gold), var(--gold-light));
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+    }
+    
+    .mockup-title h4 {
+      color: white;
+      font-size: 16px;
+    }
+    
+    .mockup-title span {
+      color: var(--gold);
+      font-size: 11px;
+      font-family: 'Sarabun', sans-serif;
+    }
+    
+    .mockup-body {
+      padding: 20px;
+      background: linear-gradient(to bottom, #f8f6f2, #fff);
+      min-height: 400px;
+    }
+    
+    .chat-bubble {
+      padding: 12px 16px;
+      border-radius: 18px;
+      margin-bottom: 12px;
+      max-width: 85%;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+    
+    .chat-bubble.assistant {
+      background: white;
+      color: var(--royal-blue);
+      border: 1px solid #e5e5e5;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+    
+    .chat-bubble.user {
+      background: linear-gradient(135deg, var(--royal-blue), #2a4a6f);
+      color: white;
+      margin-left: auto;
+    }
+    
+    .property-card {
+      background: white;
+      border: 1px solid rgba(212, 175, 55, 0.3);
+      border-radius: 12px;
+      padding: 12px;
+      margin-top: 12px;
+    }
+    
+    .property-card h5 {
+      color: var(--royal-blue);
+      font-size: 13px;
+      margin-bottom: 4px;
+    }
+    
+    .property-card p {
+      color: #666;
+      font-size: 11px;
+    }
+    
+    .property-card .price {
+      color: var(--gold);
+      font-weight: 600;
+      font-size: 14px;
+      margin-top: 6px;
+    }
+    
+    .tech-stack {
+      display: flex;
+      gap: 12px;
+      margin-top: 30px;
+      flex-wrap: wrap;
+      justify-content: center;
+      animation: slideIn 0.5s ease-out 0.5s both;
+    }
+    
+    .tech {
+      background: rgba(255, 255, 255, 0.1);
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+    
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-10px); }
+    }
+    
+    .footer {
+      position: absolute;
+      bottom: 30px;
+      left: 60px;
+      right: 60px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 14px;
+      color: rgba(255, 255, 255, 0.5);
+    }
+    
+    .footer .team {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .voice-indicator {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(212, 175, 55, 0.2);
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 11px;
+    }
+    
+    .voice-dot {
+      width: 8px;
+      height: 8px;
+      background: var(--gold);
+      border-radius: 50%;
+      animation: pulse 1.5s ease-in-out infinite;
+    }
+    
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(1.2); }
+    }
+  </style>
+</head>
+<body>
+  <div class="slide">
+    <div class="left-panel">
+      <div class="badge">Cursor Hackathon Chiang Mai 2025</div>
+      <h1 class="title">
+        Thai Property Agent
+        <span class="thai">ตัวแทนอสังหาริมทรัพย์ไทย</span>
+      </h1>
+      <p class="subtitle">
+        AI-powered bilingual real estate assistant with voice interaction, smart property search, and intelligent recommendations.
+      </p>
+      
+      <div class="features">
+        <div class="feature">
+          <div class="feature-icon">🤖</div>
+          <div class="feature-text">
+            <h3>Smart AI Chat</h3>
+            <p>Gemini 2.0 Flash with Thai language understanding</p>
+          </div>
+        </div>
+        <div class="feature">
+          <div class="feature-icon">🎤</div>
+          <div class="feature-text">
+            <h3>Voice Interaction</h3>
+            <p>Speech-to-text + ElevenLabs TTS in Thai & English</p>
+          </div>
+        </div>
+        <div class="feature">
+          <div class="feature-icon">🔍</div>
+          <div class="feature-text">
+            <h3>Smart Property Search</h3>
+            <p>NLP extracts criteria from natural conversation</p>
+          </div>
+        </div>
+        <div class="feature">
+          <div class="feature-icon">⚡</div>
+          <div class="feature-text">
+            <h3>Real-time Database</h3>
+            <p>Convex for instant data sync & updates</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="right-panel">
+      <div class="mockup">
+        <div class="mockup-header">
+          <div class="mockup-logo">🏠</div>
+          <div class="mockup-title">
+            <h4>Thai Property Agent</h4>
+            <span>ตัวแทนอสังหาริมทรัพย์ไทย</span>
+          </div>
+          <div class="voice-indicator">
+            <div class="voice-dot"></div>
+            Voice
+          </div>
+        </div>
+        <div class="mockup-body">
+          <div class="chat-bubble assistant">
+            สวัสดีครับ! 🏠 ยินดีต้อนรับสู่ Thai Property Agent ผมพร้อมช่วยคุณหาที่พักในไทยครับ
+          </div>
+          <div class="chat-bubble user">
+            หาคอนโดใกล้ BTS ราคาไม่เกิน 5 ล้าน
+          </div>
+          <div class="chat-bubble assistant">
+            พบ 3 คอนโดที่ตรงกับความต้องการครับ! 🎯
+            <div class="property-card">
+              <h5>🏢 The Line Sukhumvit</h5>
+              <p>Sukhumvit, Phrom Phong • 2BR • Near BTS Phrom Phong</p>
+              <div class="price">฿4,500,000</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="tech-stack">
+        <span class="tech">Next.js 15</span>
+        <span class="tech">Convex</span>
+        <span class="tech">Gemini 2.0</span>
+        <span class="tech">ElevenLabs</span>
+        <span class="tech">TypeScript</span>
+      </div>
+    </div>
+    
+    <div class="footer">
+      <div class="team">
+        <span>Built with ❤️ at Cursor Hackathon</span>
+      </div>
+      <div>December 2025 • Chiang Mai, Thailand 🇹🇭</div>
+    </div>
+  </div>
+</body>
+</html>
+
