@@ -1,6 +1,6 @@
 "use node";
 
-import { action, internalQuery } from "./_generated/server";
+import { action } from "./_generated/server";
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
 
@@ -28,27 +28,6 @@ Common Thai real estate terms:
 - ทาวน์เฮาส์ = Townhouse
 - ใกล้ BTS = Near BTS
 - ตารางเมตร = Square meters (sqm)`;
-
-// Internal query to get properties for context
-export const getPropertiesForContext = internalQuery({
-  args: {},
-  handler: async (ctx) => {
-    const properties = await ctx.db.query("properties").take(20);
-    return properties.map((p) => ({
-      name: p.name,
-      location: p.location,
-      district: p.district,
-      price: p.price,
-      type: p.type,
-      bedrooms: p.bedrooms,
-      bathrooms: p.bathrooms,
-      area: p.area,
-      nearBts: p.nearBts,
-      nearMrt: p.nearMrt,
-      description_en: p.description_en,
-    }));
-  },
-});
 
 // Send message to AI and get response
 export const send = action({
@@ -81,8 +60,8 @@ export const send = action({
     let systemContent = args.systemPrompt || DEFAULT_SYSTEM_PROMPT;
 
     if (args.includeProperties !== false) {
-      // Get properties for context
-      const properties = await ctx.runQuery(internal.chat.getPropertiesForContext);
+      // Get properties for context using internal query from chatQueries.ts
+      const properties = await ctx.runQuery(internal.chatQueries.getPropertiesForContext);
 
       if (properties.length > 0) {
         const propertyContext = properties
@@ -154,4 +133,3 @@ export const status = action({
     };
   },
 });
-
