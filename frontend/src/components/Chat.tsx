@@ -333,17 +333,15 @@ I'm your Thai real estate assistant, ready to help you find your perfect propert
           />
         ))}
 
-        {/* Search Results Badge */}
-        {lastSearchInfo && lastSearchInfo.performed && !isTyping && (
+        {/* Search Results Badge - only show when there ARE matches */}
+        {lastSearchInfo && lastSearchInfo.performed && lastSearchInfo.count > 0 && !isTyping && (
           <div className="flex justify-center my-3">
             <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-thai-gold/10 border border-thai-gold/30 rounded-full text-sm text-thai-royal-blue dark:text-thai-cream">
               <svg className="w-4 h-4 text-thai-gold" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
               <span>
-                {lastSearchInfo.count > 0 
-                  ? `พบ ${lastSearchInfo.count} รายการตรงกับความต้องการ (${lastSearchInfo.count} properties found)`
-                  : `ไม่พบรายการที่ตรงกัน (No exact matches)`}
+                พบ {lastSearchInfo.count} รายการตรงกับความต้องการ ({lastSearchInfo.count} properties found)
               </span>
             </div>
           </div>

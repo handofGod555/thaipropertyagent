@@ -42,9 +42,15 @@ Thai property terms:
 - บ้าน/บ้านเดี่ยว = house  
 - วิลล่า = villa
 - ทาวน์เฮาส์ = townhouse
+- หอพัก/อพาร์ทเมนต์/ห้องเช่า = condo (map to condo as closest type)
 - ใกล้ BTS / ใกล้รถไฟฟ้า = nearBts: true
 - ใกล้ MRT = nearMrt: true
 - ห้องนอน = bedrooms
+
+Thai location shortcuts:
+- มช. / มหาวิทยาลัยเชียงใหม่ / CMU = location: "Chiang Mai", district: "Suthep" or "Nimman"
+- จุฬา / CU = location: "Bangkok", district: "Pathumwan"
+- ธรรมศาสตร์ / TU = location: "Bangkok", district: "Rangsit"
 
 Examples:
 User: "หาคอนโดใกล้ BTS ราคาไม่เกิน 5 ล้าน"

@@ -8,6 +8,11 @@ const MAX_TEXT_LENGTH = 5000; // ElevenLabs limit
 const MAX_RETRIES = 3;
 const RETRY_DELAY_MS = 1000;
 
+// Multilingual voice that supports Thai properly
+// Charlotte (XB0fDUnXU5powFXDhCwa) - female, excellent multilingual support
+// River (SAz9YHcvj6GT2YYXdXww) - neutral, good multilingual support
+const DEFAULT_THAI_VOICE_ID = "XB0fDUnXU5powFXDhCwa"; // Charlotte - great for Thai
+
 // Helper function to delay execution
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -20,7 +25,8 @@ export const generate = action({
   },
   handler: async (_ctx, args) => {
     const apiKey = process.env.ELEVENLABS_API_KEY;
-    const defaultVoiceId = process.env.ELEVENLABS_VOICE_ID || "pNInz6obpgDQGcFmaJgB";
+    // Use Thai-supporting multilingual voice as default
+    const defaultVoiceId = process.env.ELEVENLABS_VOICE_ID || DEFAULT_THAI_VOICE_ID;
 
     if (!apiKey) {
       throw new Error("ELEVENLABS_API_KEY not configured in Convex environment");
@@ -38,8 +44,8 @@ export const generate = action({
     const voiceId = args.voiceId || defaultVoiceId;
     const url = `${ELEVENLABS_API_URL}/text-to-speech/${voiceId}`;
     
-    // Use eleven_multilingual_v2 which properly supports Thai language
-    const modelId = args.modelId || "eleven_multilingual_v2";
+    // Use eleven_turbo_v2_5 which has excellent native Thai language support
+    const modelId = args.modelId || "eleven_turbo_v2_5";
 
     let lastError: Error | null = null;
 

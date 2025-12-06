@@ -2,6 +2,10 @@ import axios from 'axios';
 
 const ELEVENLABS_API_URL = 'https://api.elevenlabs.io/v1';
 
+// Multilingual voice that supports Thai properly
+// Charlotte (XB0fDUnXU5powFXDhCwa) - female, excellent multilingual support
+const DEFAULT_THAI_VOICE_ID = 'XB0fDUnXU5powFXDhCwa';
+
 export interface TTSRequest {
   text: string;
   voiceId?: string;
@@ -19,7 +23,8 @@ export class ElevenLabsService {
 
   constructor() {
     this.apiKey = process.env.ELEVENLABS_API_KEY || '';
-    this.defaultVoiceId = process.env.ELEVENLABS_VOICE_ID || 'pNInz6obpgDQGcFmaJgB'; // Default: Adam voice
+    // Use Thai-supporting multilingual voice as default
+    this.defaultVoiceId = process.env.ELEVENLABS_VOICE_ID || DEFAULT_THAI_VOICE_ID;
     
     if (!this.apiKey) {
       console.warn('⚠️  ELEVENLABS_API_KEY not set - TTS will not work');
@@ -48,7 +53,7 @@ export class ElevenLabsService {
         url,
         {
           text,
-          model_id: modelId || 'eleven_v3', // Best for Thai
+          model_id: modelId || 'eleven_turbo_v2_5', // Best for Thai with native support
           voice_settings: {
             stability: 0.5,
             similarity_boost: 0.75,
