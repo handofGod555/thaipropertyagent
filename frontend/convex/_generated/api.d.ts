@@ -9,7 +9,6 @@
  */
 
 import type * as chat from "../chat.js";
-import type * as chatQueries from "../chatQueries.js";
 import type * as conversations from "../conversations.js";
 import type * as messages from "../messages.js";
 import type * as properties from "../properties.js";
@@ -24,7 +23,6 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   chat: typeof chat;
-  chatQueries: typeof chatQueries;
   conversations: typeof conversations;
   messages: typeof messages;
   properties: typeof properties;
