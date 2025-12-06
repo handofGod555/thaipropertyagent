@@ -9,6 +9,21 @@ import { VoiceControls, VoiceIndicator } from "./VoiceControls";
 import { useSpeechRecognition, SPEECH_LANGUAGES } from "@/hooks/useSpeechRecognition";
 import { useElevenLabs } from "@/hooks/useElevenLabs";
 
+// Type for matched properties returned from smart search
+interface MatchedProperty {
+  id: string;
+  name: string;
+  type: string;
+  location: string;
+  district: string;
+  price: number;
+  bedrooms: number;
+  bathrooms: number;
+  area: number;
+  nearBts?: string;
+  nearMrt?: string;
+}
+
 // Generate a unique session ID for this browser session
 function getSessionId(): string {
   if (typeof window === "undefined") return "";
@@ -34,6 +49,8 @@ export function Chat({ className = "" }: ChatProps) {
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const [matchedProperties, setMatchedProperties] = useState<MatchedProperty[]>([]);
+  const [lastSearchInfo, setLastSearchInfo] = useState<{ performed: boolean; count: number } | null>(null);
 
   // Convex queries and mutations
   const conversations = useQuery(
@@ -46,7 +63,7 @@ export function Chat({ className = "" }: ChatProps) {
   );
   const createConversation = useMutation(api.conversations.create);
   const saveMessage = useMutation(api.messages.save);
-  const sendToAI = useAction(api.chat.send);
+  const sendWithPropertySearch = useAction(api.chat.sendWithPropertySearch);
 
   // Voice hooks
   const {
@@ -108,9 +125,13 @@ export function Chat({ className = "" }: ChatProps) {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isTyping]);
 
+  // Debug: log the state
+  console.log("Chat state:", { conversationId, inputValue: inputValue.trim(), isTyping, sessionId });
+
   // Handle sending a message
   const handleSend = useCallback(async () => {
     const text = inputValue.trim();
+    console.log("handleSend called:", { text, conversationId, isTyping });
     if (!text || !conversationId || isTyping) return;
 
     // Clear input and stop listening
@@ -135,12 +156,23 @@ export function Chat({ className = "" }: ChatProps) {
         content: m.content,
       }));
 
-      // Send to AI
-      const response = await sendToAI({
+      // Send to AI with smart property search
+      const response = await sendWithPropertySearch({
         message: text,
         conversationHistory: recentMessages,
-        includeProperties: true,
       });
+
+      // Update matched properties if search was performed
+      if (response.searchPerformed && response.matchedProperties) {
+        setMatchedProperties(response.matchedProperties);
+        setLastSearchInfo({
+          performed: true,
+          count: response.totalMatches || 0,
+        });
+      } else {
+        // Clear previous search results for non-search queries
+        setLastSearchInfo(null);
+      }
 
       // Save assistant message
       await saveMessage({
@@ -170,7 +202,7 @@ export function Chat({ className = "" }: ChatProps) {
     isTyping,
     messages,
     saveMessage,
-    sendToAI,
+    sendWithPropertySearch,
     isListening,
     stopListening,
     resetTranscript,
@@ -259,6 +291,85 @@ I'm your Thai real estate assistant, ready to help you find your perfect propert
             isLatest={index === messages.length - 1}
           />
         ))}
+
+        {/* Search Results Badge */}
+        {lastSearchInfo && lastSearchInfo.performed && !isTyping && (
+          <div className="flex justify-center my-3">
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-thai-gold/10 border border-thai-gold/30 rounded-full text-sm text-thai-royal-blue dark:text-thai-cream">
+              <svg className="w-4 h-4 text-thai-gold" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+              <span>
+                {lastSearchInfo.count > 0 
+                  ? `พบ ${lastSearchInfo.count} รายการตรงกับความต้องการ (${lastSearchInfo.count} properties found)`
+                  : `ไม่พบรายการที่ตรงกัน (No exact matches)`}
+              </span>
+            </div>
+          </div>
+        )}
+
+        {/* Matched Properties Cards */}
+        {matchedProperties.length > 0 && lastSearchInfo?.performed && !isTyping && (
+          <div className="my-4 space-y-2">
+            <div className="grid gap-3">
+              {matchedProperties.slice(0, 5).map((property) => (
+                <div
+                  key={property.id}
+                  className="bg-white dark:bg-thai-royal-blue/30 border border-thai-gold/20 rounded-xl p-3 shadow-sm hover:shadow-md transition-shadow"
+                >
+                  <div className="flex justify-between items-start">
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-thai-royal-blue dark:text-white text-sm">
+                        {property.name}
+                      </h3>
+                      <p className="text-xs text-gray-600 dark:text-gray-300 mt-0.5">
+                        {property.location}, {property.district}
+                      </p>
+                    </div>
+                    <span className="px-2 py-0.5 bg-thai-gold/10 text-thai-gold-dark dark:text-thai-gold text-xs rounded-full capitalize">
+                      {property.type}
+                    </span>
+                  </div>
+                  
+                  <div className="mt-2 flex flex-wrap gap-2 text-xs">
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded-full">
+                      ฿{property.price.toLocaleString()}
+                    </span>
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full">
+                      {property.bedrooms} BR • {property.bathrooms} BA
+                    </span>
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded-full">
+                      {property.area} sqm
+                    </span>
+                  </div>
+
+                  {(property.nearBts || property.nearMrt) && (
+                    <div className="mt-2 flex flex-wrap gap-1 text-xs">
+                      {property.nearBts && (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 rounded-full">
+                          <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full"></span>
+                          BTS {property.nearBts}
+                        </span>
+                      )}
+                      {property.nearMrt && (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 rounded-full">
+                          <span className="w-1.5 h-1.5 bg-indigo-500 rounded-full"></span>
+                          MRT {property.nearMrt}
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+            
+            {matchedProperties.length > 5 && (
+              <p className="text-center text-xs text-gray-500 dark:text-gray-400 mt-2">
+                +{matchedProperties.length - 5} รายการเพิ่มเติม (more properties)
+              </p>
+            )}
+          </div>
+        )}
 
         {/* Typing indicator */}
         {isTyping && <TypingIndicator />}

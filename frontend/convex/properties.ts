@@ -5,10 +5,13 @@ import { v } from "convex/values";
 export const list = query({
   args: {
     location: v.optional(v.string()),
+    district: v.optional(v.string()),
     type: v.optional(v.string()),
     minPrice: v.optional(v.number()),
     maxPrice: v.optional(v.number()),
     minBedrooms: v.optional(v.number()),
+    nearBts: v.optional(v.boolean()),
+    nearMrt: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
     let properties = await ctx.db.query("properties").collect();
@@ -17,6 +20,12 @@ export const list = query({
     if (args.location) {
       properties = properties.filter(
         (p) => p.location.toLowerCase().includes(args.location!.toLowerCase())
+      );
+    }
+
+    if (args.district) {
+      properties = properties.filter(
+        (p) => p.district.toLowerCase().includes(args.district!.toLowerCase())
       );
     }
 
@@ -36,6 +45,16 @@ export const list = query({
 
     if (args.minBedrooms !== undefined) {
       properties = properties.filter((p) => p.bedrooms >= args.minBedrooms!);
+    }
+
+    // Filter for properties near BTS
+    if (args.nearBts === true) {
+      properties = properties.filter((p) => p.nearBts && p.nearBts.length > 0);
+    }
+
+    // Filter for properties near MRT
+    if (args.nearMrt === true) {
+      properties = properties.filter((p) => p.nearMrt && p.nearMrt.length > 0);
     }
 
     return properties;

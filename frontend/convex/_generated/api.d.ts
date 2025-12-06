@@ -13,6 +13,7 @@ import type * as conversations from "../conversations.js";
 import type * as messages from "../messages.js";
 import type * as properties from "../properties.js";
 import type * as seed from "../seed.js";
+import type * as tools from "../tools.js";
 import type * as tts from "../tts.js";
 
 import type {
@@ -27,6 +28,7 @@ declare const fullApi: ApiFromModules<{
   messages: typeof messages;
   properties: typeof properties;
   seed: typeof seed;
+  tools: typeof tools;
   tts: typeof tts;
 }>;
 
