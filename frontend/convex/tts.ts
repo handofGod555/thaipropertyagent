@@ -4,6 +4,12 @@ import { action } from "./_generated/server";
 import { v } from "convex/values";
 
 const ELEVENLABS_API_URL = "https://api.elevenlabs.io/v1";
+const MAX_TEXT_LENGTH = 5000; // ElevenLabs limit
+const MAX_RETRIES = 3;
+const RETRY_DELAY_MS = 1000;
+
+// Helper function to delay execution
+const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 // Generate speech from text using ElevenLabs API
 export const generate = action({
@@ -24,48 +30,77 @@ export const generate = action({
       throw new Error("Text is required for TTS");
     }
 
+    // Truncate text if too long
+    const text = args.text.length > MAX_TEXT_LENGTH 
+      ? args.text.slice(0, MAX_TEXT_LENGTH) 
+      : args.text;
+
     const voiceId = args.voiceId || defaultVoiceId;
     const url = `${ELEVENLABS_API_URL}/text-to-speech/${voiceId}`;
+    
+    // Use eleven_multilingual_v2 which properly supports Thai language
+    const modelId = args.modelId || "eleven_multilingual_v2";
 
-    try {
-      const response = await fetch(url, {
-        method: "POST",
-        headers: {
-          Accept: "audio/mpeg",
-          "Content-Type": "application/json",
-          "xi-api-key": apiKey,
-        },
-        body: JSON.stringify({
-          text: args.text,
-          model_id: args.modelId || "eleven_v3", // Best for Thai
-          voice_settings: {
-            stability: 0.5,
-            similarity_boost: 0.75,
-            style: 0.0,
-            use_speaker_boost: true,
+    let lastError: Error | null = null;
+
+    // Retry logic for transient errors
+    for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+      try {
+        const response = await fetch(url, {
+          method: "POST",
+          headers: {
+            Accept: "audio/mpeg",
+            "Content-Type": "application/json",
+            "xi-api-key": apiKey,
           },
-        }),
-      });
+          body: JSON.stringify({
+            text,
+            model_id: modelId,
+            voice_settings: {
+              stability: 0.5,
+              similarity_boost: 0.75,
+              style: 0.0,
+              use_speaker_boost: true,
+            },
+          }),
+        });
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`ElevenLabs API error: ${response.status} - ${errorText}`);
+        if (!response.ok) {
+          const errorText = await response.text();
+          
+          // Retry on 500 errors (transient server errors)
+          if (response.status >= 500 && attempt < MAX_RETRIES) {
+            console.log(`ElevenLabs API error (attempt ${attempt}/${MAX_RETRIES}): ${response.status} - retrying...`);
+            await delay(RETRY_DELAY_MS * attempt); // Exponential backoff
+            continue;
+          }
+          
+          throw new Error(`ElevenLabs API error: ${response.status} - ${errorText}`);
+        }
+
+        // Convert audio to base64 for sending to client
+        const arrayBuffer = await response.arrayBuffer();
+        const base64Audio = Buffer.from(arrayBuffer).toString("base64");
+
+        return {
+          audio: base64Audio,
+          contentType: "audio/mpeg",
+        };
+      } catch (error) {
+        lastError = error instanceof Error ? error : new Error(String(error));
+        
+        // Only retry on network errors or 5xx errors
+        if (attempt < MAX_RETRIES && !lastError.message.includes("4")) {
+          console.log(`TTS attempt ${attempt}/${MAX_RETRIES} failed: ${lastError.message} - retrying...`);
+          await delay(RETRY_DELAY_MS * attempt);
+          continue;
+        }
+        
+        throw new Error(`TTS generation failed: ${lastError.message}`);
       }
-
-      // Convert audio to base64 for sending to client
-      const arrayBuffer = await response.arrayBuffer();
-      const base64Audio = Buffer.from(arrayBuffer).toString("base64");
-
-      return {
-        audio: base64Audio,
-        contentType: "audio/mpeg",
-      };
-    } catch (error) {
-      if (error instanceof Error) {
-        throw new Error(`TTS generation failed: ${error.message}`);
-      }
-      throw error;
     }
+
+    throw new Error(`TTS generation failed after ${MAX_RETRIES} attempts: ${lastError?.message || "Unknown error"}`);
   },
 });
 

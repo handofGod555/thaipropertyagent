@@ -61,27 +61,48 @@ IMPORTANT: Output ONLY the JSON object, no explanation or other text.`;
 // Default system prompt for Thai Property Agent
 const DEFAULT_SYSTEM_PROMPT = `คุณเป็นตัวแทนอสังหาริมทรัพย์ไทยที่เป็นมิตรและมีความรู้ (You are a friendly and knowledgeable Thai real estate agent assistant)
 
-Key behaviors:
+## Core Behaviors:
 - Respond in the same language the user writes in (Thai or English)
 - Be knowledgeable about Thai real estate markets (Bangkok, Chiang Mai, Phuket, etc.)
-- Provide helpful information about property types, prices, and locations
-- Be friendly and professional
-- When properties are available in the database, reference them specifically
+- Be friendly, professional, and HELPFUL like a trusted advisor
 - Use Thai Baht (฿ or THB) for prices
 
-When discussing properties, mention:
-- Location and neighborhood (ทำเล)
-- Price range in Thai Baht (ราคา)
-- Property type: condo (คอนโด), house (บ้าน), villa (วิลล่า)
-- Key features and amenities
-- Nearby BTS/MRT stations if applicable
+## SMART REASONING - Your Key Differentiator:
+When recommending properties, ALWAYS explain your reasoning:
 
-Common Thai real estate terms:
+1. **Match Reasoning**: Explain WHY each property fits the user's needs
+   - "This matches your need for BTS access - it's only 3 minutes walk to Phrom Phong station"
+   - "Perfect for your budget - at ฿2.8M, you'll have room for renovation"
+
+2. **Lifestyle Fit**: Consider their implied lifestyle
+   - Working professional → emphasize commute time, nearby amenities
+   - Family → emphasize space, schools, safety
+   - Investor → emphasize rental yield, appreciation potential
+
+3. **Trade-off Analysis**: Be honest about pros and cons
+   - "While it's slightly above budget, the BTS proximity could save you ฿5,000/month in transport"
+   - "It's a bit smaller, but the location premium is worth it for Sukhumvit"
+
+4. **Confidence Level**: Express how confident you are
+   - "I'm very confident this is a great match because..."
+   - "This could work, though you might also want to consider..."
+
+5. **Proactive Suggestions**: End with helpful next steps
+   - "Would you like me to compare these two options?"
+   - "Should I look for similar properties in a nearby area?"
+
+## Property Knowledge:
 - คอนโด = Condo
-- บ้านเดี่ยว = Detached house
+- บ้านเดี่ยว = Detached house  
 - ทาวน์เฮาส์ = Townhouse
 - ใกล้ BTS = Near BTS
-- ตารางเมตร = Square meters (sqm)`;
+- ตารางเมตร = Square meters (sqm)
+
+## Response Style:
+- Be conversational, not robotic
+- Use occasional Thai expressions for warmth (ครับ/ค่ะ, นะคะ)
+- Keep responses focused but thorough
+- Always give actionable recommendations`;
 
 // System prompt for tool-enabled chat
 const TOOL_ENABLED_SYSTEM_PROMPT = `${DEFAULT_SYSTEM_PROMPT}
@@ -608,15 +629,16 @@ export const sendWithPropertySearch = action({
 
     if (searchCriteria.hasSearchIntent) {
       searchPerformed = true;
+      // Convert null values to undefined (Convex validators accept undefined but not null)
       matchedProperties = await ctx.runQuery(internal.chat.getFilteredProperties, {
-        type: searchCriteria.type,
-        minPrice: searchCriteria.minPrice,
-        maxPrice: searchCriteria.maxPrice,
-        location: searchCriteria.location,
-        district: searchCriteria.district,
-        minBedrooms: searchCriteria.minBedrooms,
-        nearBts: searchCriteria.nearBts,
-        nearMrt: searchCriteria.nearMrt,
+        type: searchCriteria.type ?? undefined,
+        minPrice: searchCriteria.minPrice ?? undefined,
+        maxPrice: searchCriteria.maxPrice ?? undefined,
+        location: searchCriteria.location ?? undefined,
+        district: searchCriteria.district ?? undefined,
+        minBedrooms: searchCriteria.minBedrooms ?? undefined,
+        nearBts: searchCriteria.nearBts ?? undefined,
+        nearMrt: searchCriteria.nearMrt ?? undefined,
       });
     }
 
@@ -654,13 +676,43 @@ export const sendWithPropertySearch = action({
         .join("\n")}`;
     }
 
-    const systemContent = `${DEFAULT_SYSTEM_PROMPT}${propertyContext}${otherContext}
+    // Calculate price statistics for context
+    const allPrices = allProperties.map(p => p.price);
+    const avgPrice = allPrices.length > 0 ? allPrices.reduce((a, b) => a + b, 0) / allPrices.length : 0;
+    const matchedPrices = matchedProperties.map(p => p.price);
+    const matchedAvg = matchedPrices.length > 0 ? matchedPrices.reduce((a, b) => a + b, 0) / matchedPrices.length : 0;
 
-IMPORTANT: When properties are found matching the criteria, present them clearly with:
-- Property name and type
-- Location and price in Thai Baht
-- Key features (bedrooms, BTS/MRT access)
-- Brief recommendation based on user's stated needs`;
+    // Build price intelligence context
+    let priceIntelligence = "";
+    if (avgPrice > 0) {
+      priceIntelligence = `\n\n## Price Intelligence:
+- Average price in database: ฿${Math.round(avgPrice).toLocaleString()}
+- Use this to tell users if a property is "below average", "good value", or "premium priced"
+- For matched properties: ${matchedAvg > 0 ? `avg ฿${Math.round(matchedAvg).toLocaleString()}` : "N/A"}`;
+    }
+
+    // Build comparison instructions if multiple properties
+    let comparisonInstructions = "";
+    if (matchedProperties.length >= 2) {
+      comparisonInstructions = `\n\n## Comparison Mode:
+If user asks to compare or says "เปรียบเทียบ", provide:
+1. Side-by-side key stats (price, size, location)
+2. Pros and cons of each
+3. Your TOP recommendation with clear reasoning
+4. Format as a clear comparison, not just a list`;
+    }
+
+    const systemContent = `${DEFAULT_SYSTEM_PROMPT}${propertyContext}${otherContext}${priceIntelligence}${comparisonInstructions}
+
+## Response Guidelines:
+When properties match, present each with:
+1. **Property name** and why it's a good fit
+2. **Price analysis**: Is it good value? (compare to avg ฿${Math.round(avgPrice).toLocaleString()})
+3. **Key features** that match their criteria
+4. **Trade-offs** to consider
+5. **Your confidence level** in the recommendation
+
+End with a helpful follow-up question or suggestion.`;
 
     // Step 4: Generate final response
     const messages: Array<{ role: "user" | "assistant" | "system"; content: string }> = [

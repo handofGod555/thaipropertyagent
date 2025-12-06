@@ -63,6 +63,7 @@ export function Chat({ className = "" }: ChatProps) {
   );
   const createConversation = useMutation(api.conversations.create);
   const saveMessage = useMutation(api.messages.save);
+  const clearMessages = useMutation(api.messages.clearConversation);
   const sendWithPropertySearch = useAction(api.chat.sendWithPropertySearch);
 
   // Voice hooks
@@ -227,6 +228,27 @@ export function Chat({ className = "" }: ChatProps) {
     }
   };
 
+  // Clear chat - reset conversation context
+  const handleClearChat = useCallback(async () => {
+    if (!conversationId || isTyping) return;
+    
+    try {
+      // Clear all messages in the conversation
+      await clearMessages({ conversationId });
+      
+      // Reset search-related states
+      setMatchedProperties([]);
+      setLastSearchInfo(null);
+      
+      // Stop any ongoing speech
+      if (isSpeaking) {
+        stopSpeaking();
+      }
+    } catch (error) {
+      console.error("Error clearing chat:", error);
+    }
+  }, [conversationId, isTyping, clearMessages, isSpeaking, stopSpeaking]);
+
   // Auto-resize textarea
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setInputValue(e.target.value);
@@ -273,7 +295,26 @@ I'm your Thai real estate assistant, ready to help you find your perfect propert
           </div>
         </div>
         
-        <VoiceIndicator isListening={isListening} isSpeaking={isSpeaking || isTTSLoading} />
+        <div className="flex items-center gap-3">
+          {/* Clear Chat Button */}
+          <button
+            type="button"
+            onClick={handleClearChat}
+            disabled={!conversationId || isTyping || !messages || messages.length === 0}
+            className={`p-2 rounded-lg transition-all ${
+              conversationId && messages && messages.length > 0 && !isTyping
+                ? "bg-white/10 hover:bg-white/20 text-white"
+                : "bg-white/5 text-white/30 cursor-not-allowed"
+            }`}
+            title="ล้างแชท (Clear chat)"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+            </svg>
+          </button>
+          
+          <VoiceIndicator isListening={isListening} isSpeaking={isSpeaking || isTTSLoading} />
+        </div>
       </header>
 
       {/* Messages Area */}
