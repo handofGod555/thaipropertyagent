@@ -24,6 +24,21 @@ interface MatchedProperty {
   nearMrt?: string;
 }
 
+// Type for agent tool usage
+interface ToolUsage {
+  tool: string;
+  success: boolean;
+  resultCount: number;
+}
+
+// Tool display names for UI
+const TOOL_DISPLAY_NAMES: Record<string, { name: string; icon: string; color: string }> = {
+  search_properties_database: { name: "Database Search", icon: "🗄️", color: "bg-blue-500" },
+  search_properties_web: { name: "Web Search", icon: "🌐", color: "bg-green-500" },
+  get_property_details: { name: "Property Details", icon: "📋", color: "bg-purple-500" },
+  compare_properties: { name: "Compare", icon: "⚖️", color: "bg-orange-500" },
+};
+
 // Generate a unique session ID for this browser session
 function getSessionId(): string {
   if (typeof window === "undefined") return "";
@@ -51,6 +66,8 @@ export function Chat({ className = "" }: ChatProps) {
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const [matchedProperties, setMatchedProperties] = useState<MatchedProperty[]>([]);
   const [lastSearchInfo, setLastSearchInfo] = useState<{ performed: boolean; count: number } | null>(null);
+  const [toolsUsed, setToolsUsed] = useState<ToolUsage[]>([]);
+  const [agentThinking, setAgentThinking] = useState<string | null>(null);
 
   // Convex queries and mutations
   const conversations = useQuery(
@@ -64,7 +81,8 @@ export function Chat({ className = "" }: ChatProps) {
   const createConversation = useMutation(api.conversations.create);
   const saveMessage = useMutation(api.messages.save);
   const clearMessages = useMutation(api.messages.clearConversation);
-  const sendWithPropertySearch = useAction(api.chat.sendWithPropertySearch);
+  // Use the new agent action instead of the old chatbot
+  const runAgent = useAction(api.agent.runAgent);
 
   // Voice hooks
   const {
@@ -148,8 +166,10 @@ export function Chat({ className = "" }: ChatProps) {
         content: text,
       });
 
-      // Show typing indicator
+      // Show typing indicator and agent thinking state
       setIsTyping(true);
+      setAgentThinking("Analyzing request...");
+      setToolsUsed([]);
 
       // Build conversation history for context
       const recentMessages = (messages || []).slice(-10).map((m) => ({
@@ -157,22 +177,28 @@ export function Chat({ className = "" }: ChatProps) {
         content: m.content,
       }));
 
-      // Send to AI with smart property search
-      const response = await sendWithPropertySearch({
+      // Run the AI agent (not just chatbot!)
+      const response = await runAgent({
         message: text,
         conversationHistory: recentMessages,
       });
 
-      // Update matched properties if search was performed
-      if (response.searchPerformed && response.matchedProperties) {
+      // Update tool usage display
+      if (response.toolsUsed && response.toolsUsed.length > 0) {
+        setToolsUsed(response.toolsUsed);
+      }
+
+      // Update matched properties if agent found any
+      if (response.matchedProperties && response.matchedProperties.length > 0) {
         setMatchedProperties(response.matchedProperties);
         setLastSearchInfo({
           performed: true,
-          count: response.totalMatches || 0,
+          count: response.matchedProperties.length,
         });
       } else {
         // Clear previous search results for non-search queries
         setLastSearchInfo(null);
+        setMatchedProperties([]);
       }
 
       // Save assistant message
@@ -196,6 +222,7 @@ export function Chat({ className = "" }: ChatProps) {
       });
     } finally {
       setIsTyping(false);
+      setAgentThinking(null);
     }
   }, [
     inputValue,
@@ -203,7 +230,7 @@ export function Chat({ className = "" }: ChatProps) {
     isTyping,
     messages,
     saveMessage,
-    sendWithPropertySearch,
+    runAgent,
     isListening,
     stopListening,
     resetTranscript,
@@ -239,6 +266,8 @@ export function Chat({ className = "" }: ChatProps) {
       // Reset search-related states
       setMatchedProperties([]);
       setLastSearchInfo(null);
+      setToolsUsed([]);
+      setAgentThinking(null);
       
       // Stop any ongoing speech
       if (isSpeaking) {
@@ -263,19 +292,30 @@ export function Chat({ className = "" }: ChatProps) {
     role: "assistant",
     content: `สวัสดีครับ! 🏠 ยินดีต้อนรับสู่ Thai Property Agent
 
-ผมเป็นผู้ช่วยด้านอสังหาริมทรัพย์ไทย พร้อมให้บริการคุณครับ คุณสามารถสอบถามเกี่ยวกับ:
+ผมเป็น **AI Agent** ด้านอสังหาริมทรัพย์ไทย ไม่ใช่แค่แชทบอทธรรมดา! ผมสามารถ:
 
-• คอนโด บ้าน หรือวิลล่าในกรุงเทพ เชียงใหม่ หรือภูเก็ต
-• ราคาและทำเลที่ตั้ง
-• ใกล้ BTS หรือ MRT สถานีไหน
+🤖 **ตัดสินใจเลือกเครื่องมือ** ที่เหมาะสมโดยอัตโนมัติ
+🗄️ **ค้นหาฐานข้อมูล** อสังหาริมทรัพย์ที่คัดสรร
+🌐 **ค้นหาออนไลน์** สำหรับประกาศล่าสุด
+⚖️ **เปรียบเทียบ** อสังหาริมทรัพย์หลายรายการ
 
-ลองพิมพ์หรือพูดถามได้เลยครับ! 🎤
+ลองถามผมได้เลย เช่น:
+• "หาคอนโดใกล้ BTS ไม่เกิน 5 ล้าน"
+• "มีบ้านในเชียงใหม่ 3 ห้องนอนไหม"
+• "ช่วยเปรียบเทียบคอนโดสองตัวนี้"
 
 ---
 
 Hello! 🏠 Welcome to Thai Property Agent
 
-I'm your Thai real estate assistant, ready to help you find your perfect property. Feel free to ask about condos, houses, or villas in Bangkok, Chiang Mai, or Phuket!`,
+I'm a real **AI Agent**, not just a chatbot! I can autonomously:
+
+🤖 **Choose the right tools** for your request
+🗄️ **Search our database** of curated properties
+🌐 **Search the web** for latest listings
+⚖️ **Compare** multiple properties
+
+Try asking me anything about Thai real estate!`,
     timestamp: Date.now(),
   };
 
@@ -332,6 +372,38 @@ I'm your Thai real estate assistant, ready to help you find your perfect propert
             isLatest={index === messages.length - 1}
           />
         ))}
+
+        {/* Agent Tools Used Badge - show which tools the agent used */}
+        {toolsUsed.length > 0 && !isTyping && (
+          <div className="flex justify-center my-3">
+            <div className="inline-flex flex-wrap items-center gap-2 px-3 py-2 bg-gradient-to-r from-thai-royal-blue/5 to-thai-gold/5 border border-thai-gold/20 rounded-xl text-sm">
+              <span className="text-thai-royal-blue/60 dark:text-thai-cream/60 text-xs font-medium">
+                🤖 Agent used:
+              </span>
+              {toolsUsed.map((tool, index) => {
+                const toolInfo = TOOL_DISPLAY_NAMES[tool.tool] || { name: tool.tool, icon: "🔧", color: "bg-gray-500" };
+                return (
+                  <span
+                    key={index}
+                    className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${
+                      tool.success
+                        ? "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300"
+                        : "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300"
+                    }`}
+                  >
+                    <span>{toolInfo.icon}</span>
+                    <span>{toolInfo.name}</span>
+                    {tool.resultCount > 0 && (
+                      <span className="ml-1 px-1.5 py-0.5 bg-white/50 dark:bg-black/20 rounded-full text-[10px]">
+                        {tool.resultCount}
+                      </span>
+                    )}
+                  </span>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {/* Search Results Badge - only show when there ARE matches */}
         {lastSearchInfo && lastSearchInfo.performed && lastSearchInfo.count > 0 && !isTyping && (
@@ -410,8 +482,22 @@ I'm your Thai real estate assistant, ready to help you find your perfect propert
           </div>
         )}
 
-        {/* Typing indicator */}
-        {isTyping && <TypingIndicator />}
+        {/* Agent Thinking / Typing indicator */}
+        {isTyping && (
+          <div className="flex flex-col items-start gap-2 mb-4">
+            {agentThinking && (
+              <div className="flex items-center gap-2 px-3 py-1.5 bg-thai-royal-blue/5 dark:bg-thai-royal-blue/20 rounded-full text-xs text-thai-royal-blue/70 dark:text-thai-cream/70">
+                <div className="flex gap-1">
+                  <span className="w-1.5 h-1.5 bg-thai-gold rounded-full animate-bounce" style={{ animationDelay: "0ms" }}></span>
+                  <span className="w-1.5 h-1.5 bg-thai-gold rounded-full animate-bounce" style={{ animationDelay: "150ms" }}></span>
+                  <span className="w-1.5 h-1.5 bg-thai-gold rounded-full animate-bounce" style={{ animationDelay: "300ms" }}></span>
+                </div>
+                <span>🤖 Agent is thinking...</span>
+              </div>
+            )}
+            <TypingIndicator />
+          </div>
+        )}
 
         {/* Interim transcript display */}
         {isListening && interimTranscript && (

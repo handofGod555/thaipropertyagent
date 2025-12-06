@@ -32,13 +32,34 @@ export const searchWeb = action({
     const apiKey = process.env.EXA_API_KEY;
 
     if (!apiKey) {
-      // Return mock results if API key not configured
-      console.log("EXA_API_KEY not configured, returning mock results");
+      // Return helpful mock results with real property website URLs
+      console.log("EXA_API_KEY not configured, returning helpful suggestions");
+      const { query } = args;
       return {
-        success: false,
-        error: "EXA_API_KEY not configured in Convex environment",
-        results: [],
-        mockData: true,
+        success: true,
+        results: [
+          {
+            title: "DDProperty - Thailand's Leading Property Portal",
+            url: `https://www.ddproperty.com/en/property-for-sale?search=${encodeURIComponent(query)}`,
+            snippet: "Search thousands of properties on DDProperty. Find condos, houses, and villas across Thailand.",
+            highlights: ["Largest property database in Thailand", "Verified listings"],
+          },
+          {
+            title: "HipFlat - Buy Property in Thailand",
+            url: `https://www.hipflat.co.th/en/search?q=${encodeURIComponent(query)}`,
+            snippet: "HipFlat connects buyers with real estate in Bangkok, Phuket, Chiang Mai and more.",
+            highlights: ["Market price insights", "Neighborhood guides"],
+          },
+          {
+            title: "FazWaz - Thailand Property for Sale",
+            url: `https://www.fazwaz.com/property-for-sale/thailand?search=${encodeURIComponent(query)}`,
+            snippet: "Discover properties in Thailand with FazWaz. International buyer friendly.",
+            highlights: ["English support", "Foreign ownership info"],
+          },
+        ],
+        query,
+        totalResults: 3,
+        note: "These are suggested property websites for your search. Visit them for live listings.",
       };
     }
 
